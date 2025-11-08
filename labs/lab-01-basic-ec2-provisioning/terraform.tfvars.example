@@ -1,0 +1,24 @@
+# Example Terraform Variables File
+#
+# Copy this file to terraform.tfvars and customize the values:
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# The terraform.tfvars file is in .gitignore to prevent committing sensitive data.
+
+# AWS Region - Choose a region close to you for better performance
+aws_region = "us-east-1"
+
+# Owner tag - REQUIRED by your sandbox account
+owner_tag = "jakub.ejnik"
+
+# Environment - dev, staging, or prod
+environment = "dev"
+
+# Instance type - Use t2.micro for Free Tier
+instance_type = "t2.micro"
+
+# Allowed SSH CIDR blocks
+# SECURITY NOTE: "0.0.0.0/0" allows SSH from anywhere.
+# For better security, restrict this to your IP address:
+# allowed_ssh_cidr = ["YOUR.IP.ADDRESS/32"]
+allowed_ssh_cidr = ["0.0.0.0/0"]
