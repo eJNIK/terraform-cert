@@ -13,7 +13,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 5.0"
     }
   }
 }
@@ -37,18 +37,23 @@ provider "aws" {
 # VPC Module Usage
 # ============================================
 
-module "vpc" {
-  source = "./modules/vpc"
 
-  name_prefix          = var.owner_tag
-  vpc_cidr             = var.vpc_cidr
-  public_subnet_count  = var.public_subnet_count
-  private_subnet_count = var.private_subnet_count
-  enable_nat_gateway   = var.enable_nat_gateway
-  nat_gateway_count    = var.nat_gateway_count
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name = "${var.owner_tag}-vpc"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
+  enable_vpn_gateway = true
 
   tags = {
-    Project = "Terraform-Certification-Prep"
+    Terraform = "true"
+    Environment = "dev"
   }
 }
 
@@ -119,7 +124,7 @@ resource "aws_instance" "web_server" {
   instance_type = var.instance_type
 
   # Deploy to first public subnet created by module
-  subnet_id = module.vpc.public_subnet_ids[0]
+  subnet_id = module.vpc.public_subnets[0]
 
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
@@ -153,4 +158,22 @@ resource "aws_instance" "web_server" {
   tags = {
     Name = "${var.owner_tag}-web-server"
   }
+}
+
+
+module "bastion" {
+  source           = "./modules/bastion"
+  vpc_id           = module.vpc.vpc_id
+  public_subnet_id = module.vpc.public_subnets[0]
+  ami_id           = data.aws_ami.amazon_linux_2023.id
+}
+
+
+# ============================================
+# DB Subnet
+# ============================================
+
+module "db_subnet" {
+  source             = "./modules/db_subnet"
+  private_subnet_ids = module.vpc.database_subnets
 }

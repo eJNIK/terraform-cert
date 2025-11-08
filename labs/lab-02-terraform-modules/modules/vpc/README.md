@@ -2,6 +2,16 @@
 
 A reusable Terraform module for creating AWS VPC infrastructure with public and private subnets across multiple availability zones.
 
+## Version
+
+**Current Version**: 2.0.0
+
+**Terraform Compatibility**: >= 1.0.0
+
+**AWS Provider Compatibility**: >= 4.0.0
+
+For version history and breaking changes, see [CHANGELOG.md](./CHANGELOG.md).
+
 ## Features
 
 - VPC with configurable CIDR block
