@@ -74,6 +74,21 @@ output "web_server_url" {
   value       = "http://${aws_instance.web_server.public_ip}"
 }
 
+output "az" {
+  description = "Availability Zone of the EC2 instance"
+  value = aws_instance.web_server.availability_zone
+}
+
+output "instance_private_ip" {
+  description = "The private IP address of the EC2 instance"
+  value       = aws_instance.web_server.private_ip
+}
+
+output "arn" {
+  description = "ARN of the EC2 instance"
+  value = aws_instance.web_server.arn
+}
+
 # Formatted output for easy SSH access
 output "ssh_command" {
   description = "SSH command to connect to the instance"

@@ -136,7 +136,16 @@ resource "aws_security_group" "web_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_http_cidr
+  }
+
+  # Inbound rule for HTTPS (port 443)
+  ingress {
+    description = "HTTPS from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = var.allowed_https_cidr
   }
 
   # Outbound rule - allow all traffic
@@ -186,5 +195,6 @@ resource "aws_instance" "web_server" {
 
   tags = {
     Name = "${var.owner_tag}-web-server"
+    Description = "Web server instance created by Terraform"
   }
 }

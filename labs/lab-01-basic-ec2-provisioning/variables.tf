@@ -58,6 +58,28 @@ variable "allowed_ssh_cidr" {
   }
 }
 
+variable "allowed_http_cidr" {
+  description = "CIDR blocks allowed to HTTP into the instance"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+
+  validation {
+    condition     = length(var.allowed_http_cidr) > 0
+    error_message = "At least one CIDR block must be specified."
+  }
+}
+
+variable "allowed_https_cidr" {
+  description = "CIDR blocks allowed to HTTPS into the instance"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+
+  validation {
+    condition     = length(var.allowed_https_cidr) > 0
+    error_message = "At least one CIDR block must be specified."
+  }
+}
+
 # ============================================
 # Networking Variables
 # ============================================
