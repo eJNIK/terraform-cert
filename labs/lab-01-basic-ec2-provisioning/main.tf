@@ -2,8 +2,9 @@
 # Exam Objectives:
 # - Understand Terraform basics and workflow
 # - Configure providers
-# - Create and manage resources
+# - Create and manage resources (VPC, Subnet, EC2, Security Groups)
 # - Use input variables and outputs
+# - Understand resource dependencies
 
 # Configure Terraform settings and required providers
 terraform {
@@ -48,10 +49,77 @@ data "aws_ami" "amazon_linux_2023" {
   }
 }
 
+# Data source to get available availability zones
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# ============================================
+# VPC and Networking Resources
+# ============================================
+
+# VPC - Virtual Private Cloud
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = "${var.owner_tag}-vpc"
+  }
+}
+
+# Internet Gateway - Allows communication between VPC and the internet
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "${var.owner_tag}-igw"
+  }
+}
+
+# Public Subnet - Where our EC2 instance will live
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidr
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.owner_tag}-public-subnet"
+  }
+}
+
+# Route Table - Defines network traffic routing rules
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  # Route all traffic (0.0.0.0/0) to the internet gateway
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "${var.owner_tag}-public-rt"
+  }
+}
+
+# Route Table Association - Associates the route table with the subnet
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+# ============================================
+# Security Group
+# ============================================
+
 # Security Group for EC2 instance
 resource "aws_security_group" "web_sg" {
   name        = "${var.owner_tag}-web-server-sg"
   description = "Security group for web server allowing HTTP and SSH"
+  vpc_id      = aws_vpc.main.id
 
   # Inbound rule for SSH (port 22)
   ingress {
@@ -85,10 +153,15 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
+# ============================================
+# EC2 Instance
+# ============================================
+
 # EC2 Instance
 resource "aws_instance" "web_server" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = var.instance_type
+  subnet_id     = aws_subnet.public.id
 
   # Associate the security group
   vpc_security_group_ids = [aws_security_group.web_sg.id]

@@ -57,3 +57,29 @@ variable "allowed_ssh_cidr" {
     error_message = "At least one CIDR block must be specified."
   }
 }
+
+# ============================================
+# Networking Variables
+# ============================================
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+
+  validation {
+    condition     = can(cidrhost(var.vpc_cidr, 0))
+    error_message = "Must be a valid IPv4 CIDR block."
+  }
+}
+
+variable "public_subnet_cidr" {
+  description = "CIDR block for the public subnet"
+  type        = string
+  default     = "10.0.1.0/24"
+
+  validation {
+    condition     = can(cidrhost(var.public_subnet_cidr, 0))
+    error_message = "Must be a valid IPv4 CIDR block."
+  }
+}
