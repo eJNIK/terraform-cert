@@ -1,0 +1,56 @@
+# Example Terraform Variables File for Lab 02
+#
+# Copy this file to terraform.tfvars and customize the values:
+#   cp terraform.tfvars.example terraform.tfvars
+
+# ============================================
+# General Configuration
+# ============================================
+
+# AWS Region
+aws_region = "us-east-1"
+
+# Owner tag - REQUIRED by sandbox account
+owner_tag = "jakub.ejnik"
+
+# Environment
+environment = "dev"
+
+# ============================================
+# VPC Module Configuration
+# ============================================
+
+# VPC CIDR block
+vpc_cidr = "10.0.0.0/16"
+
+# Number of public subnets (1-6)
+# These will be distributed across availability zones
+public_subnet_count = 2
+
+# Number of private subnets (0-6)
+# Set to 0 if you don't need private subnets
+private_subnet_count = 2
+
+# Enable NAT Gateway for private subnets
+# WARNING: NAT Gateway costs ~$32/month per gateway + data transfer
+# Set to false for development/testing to save costs
+enable_nat_gateway = false
+
+# Number of NAT Gateways (1-3)
+# For HA, use one per AZ (e.g., 2 or 3)
+# For cost savings, use 1
+# Only applies if enable_nat_gateway = true
+nat_gateway_count = 1
+
+# ============================================
+# EC2 Instance Configuration
+# ============================================
+
+# Instance type - Use t2.micro for Free Tier
+instance_type = "t2.micro"
+
+# Allowed SSH CIDR blocks
+# SECURITY NOTE: "0.0.0.0/0" allows SSH from anywhere
+# For better security, restrict to your IP:
+# allowed_ssh_cidr = ["YOUR.IP.ADDRESS/32"]
+allowed_ssh_cidr = ["0.0.0.0/0"]
