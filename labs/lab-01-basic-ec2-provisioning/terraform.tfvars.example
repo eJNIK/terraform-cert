@@ -22,3 +22,9 @@ instance_type = "t2.micro"
 # For better security, restrict this to your IP address:
 # allowed_ssh_cidr = ["YOUR.IP.ADDRESS/32"]
 allowed_ssh_cidr = ["0.0.0.0/0"]
+
+# VPC CIDR block - Default is 10.0.0.0/16 (provides 65,536 IP addresses)
+vpc_cidr = "10.0.0.0/16"
+
+# Public subnet CIDR - Must be within VPC CIDR range
+public_subnet_cidr = "10.0.1.0/24"

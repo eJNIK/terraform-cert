@@ -2,7 +2,7 @@
 
 ## Lab Overview
 
-Welcome to your first hands-on Terraform lab! In this lab, you'll learn the fundamentals of Infrastructure as Code (IaC) by provisioning an AWS EC2 instance with a security group using Terraform.
+Welcome to your first hands-on Terraform lab! In this lab, you'll learn the fundamentals of Infrastructure as Code (IaC) by provisioning a complete AWS networking stack including a VPC, subnet, internet gateway, security group, and EC2 instance using Terraform.
 
 ### Exam Objectives Covered
 
@@ -12,9 +12,11 @@ This lab aligns with the following HashiCorp Terraform Professional exam objecti
 - **2a**: Understand Terraform basics and workflow (init, plan, apply, destroy)
 - **3a**: Configure providers
 - **3b**: Create and manage resources
-- **4a**: Use input variables
+- **3c**: Understand resource dependencies and ordering
+- **4a**: Use input variables with validation
 - **4b**: Use output values
 - **5a**: Understand data sources
+- **6a**: Understand AWS VPC networking basics
 
 ### Lab Goals
 
@@ -22,11 +24,14 @@ By the end of this lab, you will:
 
 1. Initialize a Terraform working directory
 2. Configure the AWS provider
-3. Create a security group with ingress/egress rules
-4. Launch an EC2 instance with a web server
-5. Use variables to parameterize your configuration
-6. Extract information using outputs
-7. Understand the Terraform workflow and state management
+3. Create a VPC from scratch (no default VPC needed)
+4. Set up networking components (subnet, internet gateway, route table)
+5. Create a security group with ingress/egress rules
+6. Launch an EC2 instance in your custom VPC
+7. Use variables to parameterize your configuration
+8. Extract information using outputs
+9. Understand resource dependencies and the Terraform workflow
+10. Understand the Terraform state management
 
 ### Time Estimate
 
@@ -47,7 +52,7 @@ By the end of this lab, you will:
 
 1. **AWS Account**: Active AWS account (sandbox account in your case)
 2. **AWS Credentials**: Configured via AWS CLI or environment variables
-3. **IAM Permissions**: Ability to create EC2 instances, security groups, and describe AMIs
+3. **IAM Permissions**: Ability to create VPCs, subnets, internet gateways, route tables, EC2 instances, security groups, and describe AMIs
 
 ### Verify Setup
 
@@ -66,29 +71,62 @@ cd labs/lab-01-basic-ec2-provisioning
 
 ## Lab Architecture
 
-This lab creates the following AWS resources:
+This lab creates the following AWS resources (7 resources total):
 
 ```
-┌─────────────────────────────────────────┐
-│         AWS VPC (Default)               │
-│                                         │
-│  ┌───────────────────────────────────┐  │
-│  │   Security Group                  │  │
-│  │   - Allow SSH (port 22)           │  │
-│  │   - Allow HTTP (port 80)          │  │
-│  │   - Allow all outbound            │  │
-│  └───────────────────────────────────┘  │
-│               │                         │
-│               ▼                         │
-│  ┌───────────────────────────────────┐  │
-│  │   EC2 Instance (t2.micro)         │  │
-│  │   - Amazon Linux 2023             │  │
-│  │   - Apache Web Server             │  │
-│  │   - Public IP                     │  │
-│  └───────────────────────────────────┘  │
-│                                         │
-└─────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│                    AWS Region (us-east-1)                  │
+│                                                            │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │           VPC (10.0.0.0/16)                          │  │
+│  │                                                      │  │
+│  │  ┌────────────────────────────────────────────────┐  │  │
+│  │  │  Public Subnet (10.0.1.0/24)                   │  │  │
+│  │  │  AZ: us-east-1a                                │  │  │
+│  │  │                                                │  │  │
+│  │  │  ┌──────────────────────────────────────────┐  │  │  │
+│  │  │  │  Security Group                          │  │  │  │
+│  │  │  │  - Ingress: SSH (22)                     │  │  │  │
+│  │  │  │  - Ingress: HTTP (80)                    │  │  │  │
+│  │  │  │  - Egress: All traffic                   │  │  │  │
+│  │  │  └──────────────────────────────────────────┘  │  │  │
+│  │  │                    │                          │  │  │
+│  │  │                    ▼                          │  │  │
+│  │  │  ┌──────────────────────────────────────────┐  │  │  │
+│  │  │  │  EC2 Instance (t2.micro)                 │  │  │  │
+│  │  │  │  - Amazon Linux 2023                     │  │  │  │
+│  │  │  │  - Apache Web Server                     │  │  │  │
+│  │  │  │  - Public IP: Auto-assigned              │  │  │  │
+│  │  │  └──────────────────────────────────────────┘  │  │  │
+│  │  │                                                │  │  │
+│  │  └────────────────────────────────────────────────┘  │  │
+│  │                                                      │  │
+│  │  ┌────────────────────────────────────────────────┐  │  │
+│  │  │  Route Table                                   │  │  │
+│  │  │  Route: 0.0.0.0/0 → Internet Gateway          │  │  │
+│  │  └────────────────────────────────────────────────┘  │  │
+│  │                          │                           │  │
+│  └──────────────────────────┼───────────────────────────┘  │
+│                             │                              │
+│                             ▼                              │
+│              ┌──────────────────────────┐                  │
+│              │  Internet Gateway        │                  │
+│              └──────────────────────────┘                  │
+│                             │                              │
+└─────────────────────────────┼──────────────────────────────┘
+                              │
+                              ▼
+                         Internet
 ```
+
+**Resource Breakdown:**
+1. VPC
+2. Internet Gateway
+3. Public Subnet
+4. Route Table
+5. Route Table Association
+6. Security Group
+7. EC2 Instance
 
 ---
 
@@ -206,7 +244,7 @@ terraform plan
 ```
 
 **What to Look For:**
-- Number of resources to be created (should be 2: security group and EC2 instance)
+- Number of resources to be created (should be 7: VPC, IGW, subnet, route table, route table association, security group, and EC2 instance)
 - The AMI ID that will be used (data source result)
 - Security group rules
 - Instance configuration details
@@ -216,12 +254,16 @@ terraform plan
 ```
 Terraform will perform the following actions:
 
-  # aws_instance.web_server will be created
-  + resource "aws_instance" "web_server" {
-      + ami                          = "ami-xxxxxxxxx"
-      + instance_type                = "t2.micro"
+  # aws_vpc.main will be created
+  + resource "aws_vpc" "main" {
+      + cidr_block           = "10.0.0.0/16"
       ...
     }
+
+  # aws_internet_gateway.main will be created
+  # aws_subnet.public will be created
+  # aws_route_table.public will be created
+  # aws_route_table_association.public will be created
 
   # aws_security_group.web_sg will be created
   + resource "aws_security_group" "web_sg" {
@@ -229,7 +271,14 @@ Terraform will perform the following actions:
       ...
     }
 
-Plan: 2 to add, 0 to change, 0 to destroy.
+  # aws_instance.web_server will be created
+  + resource "aws_instance" "web_server" {
+      + ami                          = "ami-xxxxxxxxx"
+      + instance_type                = "t2.micro"
+      ...
+    }
+
+Plan: 7 to add, 0 to change, 0 to destroy.
 ```
 
 ### Step 7: Apply Your Configuration
@@ -245,7 +294,7 @@ Review the plan again, then type `yes` when prompted.
 **Expected Output:**
 ```
 ...
-Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+Apply complete! Resources: 7 added, 0 changed, 0 destroyed.
 
 Outputs:
 
@@ -254,15 +303,23 @@ instance_id = "i-0123456789abcdef"
 instance_public_dns = "ec2-xx-xx-xx-xx.compute-1.amazonaws.com"
 instance_public_ip = "xx.xx.xx.xx"
 instance_state = "running"
+internet_gateway_id = "igw-0123456789abcdef"
+public_subnet_id = "subnet-0123456789abcdef"
 security_group_id = "sg-0123456789abcdef"
 security_group_name = "jakub.ejnik-web-server-sg"
 ssh_command = "ssh -i <your-key.pem> ec2-user@xx.xx.xx.xx"
+vpc_cidr = "10.0.0.0/16"
+vpc_id = "vpc-0123456789abcdef"
 web_server_url = "http://xx.xx.xx.xx"
 ```
 
 **What Happened?**
+- Terraform created the VPC
+- Terraform created the Internet Gateway and attached it to the VPC
+- Terraform created the public subnet
+- Terraform created the route table and associated it with the subnet
 - Terraform created the security group
-- Terraform launched the EC2 instance
+- Terraform launched the EC2 instance in the public subnet
 - Created `terraform.tfstate` file to track your infrastructure
 - User data script installed Apache and created a web page
 
@@ -316,8 +373,14 @@ terraform state list
 **Expected Output:**
 ```
 data.aws_ami.amazon_linux_2023
+data.aws_availability_zones.available
 aws_instance.web_server
+aws_internet_gateway.main
+aws_route_table.public
+aws_route_table_association.public
 aws_security_group.web_sg
+aws_subnet.public
+aws_vpc.main
 ```
 
 View specific resource details:
@@ -379,7 +442,7 @@ Review the destruction plan and type `yes` when prompted.
 
 **Expected Output:**
 ```
-Destroy complete! Resources: 2 destroyed.
+Destroy complete! Resources: 7 destroyed.
 ```
 
 Verify in AWS Console that resources are terminated/deleted.
@@ -392,8 +455,11 @@ Verify in AWS Console that resources are terminated/deleted.
 
 - [ ] `terraform init` completed successfully
 - [ ] `terraform validate` shows no errors
-- [ ] `terraform plan` shows 2 resources to create
+- [ ] `terraform plan` shows 7 resources to create
 - [ ] `terraform apply` completed without errors
+- [ ] VPC created with correct CIDR block (10.0.0.0/16)
+- [ ] Public subnet created in the VPC
+- [ ] Internet Gateway attached to VPC
 - [ ] Can access web page at the instance's public IP
 - [ ] Web page displays "Hello from Terraform Lab 01!"
 - [ ] All outputs display correct information
@@ -447,10 +513,37 @@ The provider block tells Terraform which cloud provider to use:
 - Requires authentication (credentials)
 - Can be configured with default tags
 
+### Resource Dependencies
+
+Terraform automatically determines the correct order to create resources based on dependencies:
+- **Implicit dependencies**: Terraform detects when one resource references another (e.g., security group references VPC ID)
+- **Dependency chain**: VPC → Internet Gateway → Subnet → Route Table → Security Group → EC2 Instance
+- **Parallel execution**: Resources without dependencies are created concurrently for efficiency
+- **Explicit dependencies**: Use `depends_on` when Terraform can't automatically detect the relationship
+
+**Example from our lab:**
+```
+EC2 Instance depends on → Security Group
+Security Group depends on → VPC
+Subnet depends on → VPC
+Route Table depends on → Internet Gateway → VPC
+```
+
+### VPC Networking Basics
+
+Understanding AWS VPC components created in this lab:
+- **VPC**: Isolated virtual network in AWS (like your own data center)
+- **CIDR Block**: IP address range for your VPC (10.0.0.0/16 = 65,536 addresses)
+- **Subnet**: Segment of the VPC's IP range (10.0.1.0/24 = 256 addresses)
+- **Internet Gateway**: Allows communication between VPC and the internet
+- **Route Table**: Defines rules for routing network traffic
+- **Public Subnet**: Subnet with a route to the internet gateway
+
 ### Data Sources
 
 Data sources allow Terraform to fetch information from AWS:
 - `aws_ami` data source finds the latest Amazon Linux AMI
+- `aws_availability_zones` finds available AZs in the region
 - Read-only operations
 - Don't create or modify resources
 
@@ -557,5 +650,10 @@ Congratulations on completing Lab 01! You've learned the fundamentals of Terrafo
 3. What happens to the state file when you run `terraform destroy`?
 4. How does Terraform know what resources already exist in AWS?
 5. What's the purpose of the `data` block for the AMI?
+6. Why does the EC2 instance need to be in a subnet, and why did we make it a public subnet?
+7. What would happen if you tried to create the EC2 instance before the VPC was created?
+8. How does Terraform determine the order in which to create resources?
+9. What's the purpose of the Internet Gateway, and why is it necessary?
+10. What's the difference between a VPC CIDR block and a subnet CIDR block?
 
 Think about these questions and discuss with your tutor if you need clarification!

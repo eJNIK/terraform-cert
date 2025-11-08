@@ -6,6 +6,34 @@
 # - Passing data between Terraform configurations
 # - Referencing values in scripts or other tools
 
+# ============================================
+# VPC Outputs
+# ============================================
+
+output "vpc_id" {
+  description = "The ID of the VPC"
+  value       = aws_vpc.main.id
+}
+
+output "vpc_cidr" {
+  description = "The CIDR block of the VPC"
+  value       = aws_vpc.main.cidr_block
+}
+
+output "public_subnet_id" {
+  description = "The ID of the public subnet"
+  value       = aws_subnet.public.id
+}
+
+output "internet_gateway_id" {
+  description = "The ID of the Internet Gateway"
+  value       = aws_internet_gateway.main.id
+}
+
+# ============================================
+# EC2 Instance Outputs
+# ============================================
+
 output "instance_id" {
   description = "The ID of the EC2 instance"
   value       = aws_instance.web_server.id
