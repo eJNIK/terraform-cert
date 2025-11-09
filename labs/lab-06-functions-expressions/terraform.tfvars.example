@@ -1,0 +1,32 @@
+aws_region  = "us-east-1"
+owner_tag   = "jakub.ejnik"
+environment = "dev"
+
+vpc_cidr       = "10.6.0.0/16"
+allowed_cidrs  = ["10.0.0.0/8", "172.16.0.0/12"]
+
+additional_ports = [8080, 8443, 9090]
+
+extra_tags = {
+  Project = "TerraformCert"
+  Team    = "DevOps"
+  CostCenter = "Engineering"
+}
+
+security_groups = {
+  web = {
+    description = "Web servers"
+    ports       = [80, 443]
+    protocol    = "tcp"
+  }
+  app = {
+    description = "Application servers"
+    ports       = [8080, 8443, 9090]
+    protocol    = "tcp"
+  }
+  db = {
+    description = "Database servers"
+    ports       = [3306, 5432]
+    protocol    = "tcp"
+  }
+}
