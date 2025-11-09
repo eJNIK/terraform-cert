@@ -55,6 +55,12 @@ locals {
       vpc_cidr         = "10.2.0.0/16"
       enable_monitoring = true
     }
+    qa = {
+      instance_type    = "t2.small"
+      instance_count   = 2
+      vpc_cidr         = "10.3.0.0/16"
+      enable_monitoring = true
+    }
   }
 
   # Get current workspace config or default to dev
@@ -147,6 +153,19 @@ resource "aws_security_group" "web" {
   description = "Security group for web servers in ${terraform.workspace}"
   vpc_id      = aws_vpc.main.id
 
+  dynamic "ingress" {
+    
+  for_each = contains(["dev", "staging"], terraform.workspace) ? [1] : []
+
+    content {
+      description = "SSH"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
   ingress {
     description = "SSH"
     from_port   = 22
@@ -154,6 +173,7 @@ resource "aws_security_group" "web" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
 
   ingress {
     description = "HTTP"
