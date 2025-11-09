@@ -1,0 +1,6 @@
+aws_region  = "us-east-1"
+owner_tag   = "jakub.ejnik"
+environment = "dev"
+
+# List of IAM user names for count example
+user_names = ["alice", "bob", "charlie"]

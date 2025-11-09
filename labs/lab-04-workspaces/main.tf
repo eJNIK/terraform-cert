@@ -154,8 +154,7 @@ resource "aws_security_group" "web" {
   vpc_id      = aws_vpc.main.id
 
   dynamic "ingress" {
-    
-  for_each = contains(["dev", "staging"], terraform.workspace) ? [1] : []
+    for_each = contains(["dev", "staging"], terraform.workspace) ? [1] : []
 
     content {
       description = "SSH"
@@ -165,15 +164,6 @@ resource "aws_security_group" "web" {
       cidr_blocks = ["0.0.0.0/0"]
     }
   }
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
 
   ingress {
     description = "HTTP"
